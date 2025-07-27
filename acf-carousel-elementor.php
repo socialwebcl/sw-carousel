@@ -49,11 +49,27 @@ class ACF_Carousel_Elementor {
             return;
         }
         
+        // Include debug class if WP_DEBUG is enabled
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            require_once(ACF_CAROUSEL_PLUGIN_PATH . 'includes/class-acf-carousel-debug.php');
+        }
+        
         // Add Plugin actions
         add_action('elementor/widgets/widgets_registered', [$this, 'init_widgets']);
         add_action('elementor/frontend/after_register_scripts', [$this, 'widget_scripts']);
         add_action('elementor/frontend/after_register_styles', [$this, 'widget_styles']);
         add_action('wp_enqueue_scripts', [$this, 'enqueue_scripts']);
+        
+        // Load text domain
+        add_action('plugins_loaded', [$this, 'load_textdomain']);
+    }
+    
+    public function load_textdomain() {
+        load_plugin_textdomain(
+            'acf-carousel-elementor',
+            false,
+            dirname(plugin_basename(__FILE__)) . '/languages/'
+        );
     }
     
     public function admin_notice_missing_elementor() {
@@ -77,11 +93,22 @@ class ACF_Carousel_Elementor {
     }
     
     public function init_widgets() {
-        // Include Widget files
-        require_once(ACF_CAROUSEL_PLUGIN_PATH . 'widgets/acf-carousel-widget.php');
+        // Verificar que Elementor esté disponible
+        if (!class_exists('\Elementor\Widget_Base')) {
+            return;
+        }
         
-        // Register widget
-        \Elementor\Plugin::instance()->widgets_manager->register_widget_type(new \ACF_Carousel_Widget());
+        // Include Widget files
+        $widget_file = ACF_CAROUSEL_PLUGIN_PATH . 'widgets/acf-carousel-widget.php';
+        
+        if (file_exists($widget_file)) {
+            require_once($widget_file);
+            
+            // Verificar que la clase del widget existe antes de registrarla
+            if (class_exists('ACF_Carousel_Widget')) {
+                \Elementor\Plugin::instance()->widgets_manager->register_widget_type(new \ACF_Carousel_Widget());
+            }
+        }
     }
     
     public function widget_scripts() {
@@ -117,6 +144,13 @@ class ACF_Carousel_Elementor {
             [],
             ACF_CAROUSEL_VERSION
         );
+        
+        wp_register_style(
+            'acf-hero-carousel-widget',
+            ACF_CAROUSEL_PLUGIN_URL . 'assets/css/hero-carousel.css',
+            [],
+            ACF_CAROUSEL_VERSION
+        );
     }
     
     public function enqueue_scripts() {
@@ -125,6 +159,7 @@ class ACF_Carousel_Elementor {
             wp_enqueue_script('embla-carousel-autoplay');
             wp_enqueue_script('acf-carousel-widget');
             wp_enqueue_style('acf-carousel-widget');
+            wp_enqueue_style('acf-hero-carousel-widget');
         }
     }
 }

@@ -35,7 +35,8 @@ class ACF_Carousel_Widget extends \Elementor\Widget_Base {
     }
     
     public function get_style_depends() {
-        return ['acf-carousel-widget'];
+        // Cargar ambos estilos siempre para evitar problemas de inicialización
+        return ['acf-carousel-widget', 'acf-hero-carousel-widget'];
     }
     
     protected function register_controls() {
@@ -101,6 +102,115 @@ class ACF_Carousel_Widget extends \Elementor\Widget_Base {
                 'options' => [
                     'ASC' => esc_html__('Ascending', 'acf-carousel-elementor'),
                     'DESC' => esc_html__('Descending', 'acf-carousel-elementor'),
+                ],
+            ]
+        );
+        
+        $this->end_controls_section();
+        
+        // Template Selection
+        $this->start_controls_section(
+            'template_section',
+            [
+                'label' => esc_html__('Template Style', 'acf-carousel-elementor'),
+                'tab' => \Elementor\Controls_Manager::TAB_CONTENT,
+            ]
+        );
+        
+        $this->add_control(
+            'carousel_template',
+            [
+                'label' => esc_html__('Template', 'acf-carousel-elementor'),
+                'type' => \Elementor\Controls_Manager::SELECT,
+                'default' => 'default',
+                'options' => [
+                    'default' => esc_html__('Default Cards', 'acf-carousel-elementor'),
+                    'hero' => esc_html__('Hero Section', 'acf-carousel-elementor'),
+                ],
+            ]
+        );
+        
+        $this->end_controls_section();
+        
+        // Hero Template Settings
+        $this->start_controls_section(
+            'hero_content_section',
+            [
+                'label' => esc_html__('Hero Content', 'acf-carousel-elementor'),
+                'tab' => \Elementor\Controls_Manager::TAB_CONTENT,
+                'condition' => [
+                    'carousel_template' => 'hero',
+                ],
+            ]
+        );
+        
+        $this->add_control(
+            'hero_category',
+            [
+                'label' => esc_html__('Category/Subtitle', 'acf-carousel-elementor'),
+                'type' => \Elementor\Controls_Manager::TEXT,
+                'default' => esc_html__('Winter Mountains', 'acf-carousel-elementor'),
+                'placeholder' => esc_html__('e.g., Winter Mountains', 'acf-carousel-elementor'),
+            ]
+        );
+        
+        $this->add_control(
+            'hero_title',
+            [
+                'label' => esc_html__('Main Title', 'acf-carousel-elementor'),
+                'type' => \Elementor\Controls_Manager::TEXTAREA,
+                'default' => esc_html__('Cold Weather Adventures', 'acf-carousel-elementor'),
+                'placeholder' => esc_html__('Enter your main hero title', 'acf-carousel-elementor'),
+            ]
+        );
+        
+        $this->add_control(
+            'hero_subtitle',
+            [
+                'label' => esc_html__('Description', 'acf-carousel-elementor'),
+                'type' => \Elementor\Controls_Manager::TEXTAREA,
+                'default' => esc_html__('Celebrate the season by planning a wintertime trip to one of favourite mountain getaways.', 'acf-carousel-elementor'),
+                'placeholder' => esc_html__('Enter hero description', 'acf-carousel-elementor'),
+            ]
+        );
+        
+        $this->add_control(
+            'show_hero_cta',
+            [
+                'label' => esc_html__('Show CTA Button', 'acf-carousel-elementor'),
+                'type' => \Elementor\Controls_Manager::SWITCHER,
+                'label_on' => esc_html__('Yes', 'acf-carousel-elementor'),
+                'label_off' => esc_html__('No', 'acf-carousel-elementor'),
+                'return_value' => 'yes',
+                'default' => 'yes',
+            ]
+        );
+        
+        $this->add_control(
+            'hero_cta_text',
+            [
+                'label' => esc_html__('CTA Button Text', 'acf-carousel-elementor'),
+                'type' => \Elementor\Controls_Manager::TEXT,
+                'default' => esc_html__('Book Your Destination', 'acf-carousel-elementor'),
+                'condition' => [
+                    'show_hero_cta' => 'yes',
+                ],
+            ]
+        );
+        
+        $this->add_control(
+            'hero_cta_link',
+            [
+                'label' => esc_html__('CTA Button Link', 'acf-carousel-elementor'),
+                'type' => \Elementor\Controls_Manager::URL,
+                'placeholder' => esc_html__('https://your-link.com', 'acf-carousel-elementor'),
+                'default' => [
+                    'url' => '#',
+                    'is_external' => false,
+                    'nofollow' => false,
+                ],
+                'condition' => [
+                    'show_hero_cta' => 'yes',
                 ],
             ]
         );
@@ -215,12 +325,15 @@ class ACF_Carousel_Widget extends \Elementor\Widget_Base {
         
         $this->end_controls_section();
         
-        // Card Content Settings
+        // Card Content Settings (only for default template)
         $this->start_controls_section(
             'card_content_section',
             [
                 'label' => esc_html__('Card Content', 'acf-carousel-elementor'),
                 'tab' => \Elementor\Controls_Manager::TAB_CONTENT,
+                'condition' => [
+                    'carousel_template' => 'default',
+                ],
             ]
         );
         
@@ -488,11 +601,47 @@ class ACF_Carousel_Widget extends \Elementor\Widget_Base {
     protected function render() {
         $settings = $this->get_settings_for_display();
         
+        // Verificar que los settings estén disponibles
+        if (empty($settings)) {
+            echo '<p>' . esc_html__('Widget settings not loaded.', 'acf-carousel-elementor') . '</p>';
+            return;
+        }
+        
+        // Valores por defecto para evitar errores
+        $settings = wp_parse_args($settings, [
+            'post_type' => 'post',
+            'posts_per_page' => 6,
+            'order_by' => 'date',
+            'order' => 'DESC',
+            'carousel_template' => 'default',
+            'slides_to_show' => 3,
+            'slides_to_scroll' => 1,
+            'loop' => 'yes',
+            'draggable' => 'yes',
+            'autoplay' => 'no',
+            'autoplay_delay' => 4000,
+            'show_arrows' => 'yes',
+            'show_dots' => 'yes',
+            'show_featured_image' => 'yes',
+            'image_size' => 'medium',
+            'show_title' => 'yes',
+            'show_excerpt' => 'yes',
+            'excerpt_length' => 20,
+            'show_read_more' => 'yes',
+            'read_more_text' => esc_html__('Read More', 'acf-carousel-elementor'),
+            'hero_title' => esc_html__('Amazing Destinations', 'acf-carousel-elementor'),
+            'hero_category' => '',
+            'hero_subtitle' => '',
+            'show_hero_cta' => 'no',
+            'hero_cta_text' => esc_html__('Learn More', 'acf-carousel-elementor'),
+            'hero_cta_link' => ['url' => '#']
+        ]);
+        
         $query_args = [
-            'post_type' => $settings['post_type'],
-            'posts_per_page' => $settings['posts_per_page'],
-            'orderby' => $settings['order_by'],
-            'order' => $settings['order'],
+            'post_type' => sanitize_text_field($settings['post_type']),
+            'posts_per_page' => absint($settings['posts_per_page']),
+            'orderby' => sanitize_text_field($settings['order_by']),
+            'order' => sanitize_text_field($settings['order']),
             'post_status' => 'publish',
         ];
         
@@ -500,199 +649,236 @@ class ACF_Carousel_Widget extends \Elementor\Widget_Base {
         
         if ($posts_query->have_posts()) :
             $carousel_id = 'acf-carousel-' . $this->get_id();
-            ?>
-            <div class="acf-carousel-wrapper" id="<?php echo esc_attr($carousel_id); ?>">
-                <?php if ($settings['show_arrows'] === 'yes') : ?>
-                <div class="embla__buttons">
-                    <button class="embla__button embla__button--prev" type="button">
-                        <svg class="embla__button__svg" viewBox="0 0 532 532">
-                            <path fill="currentColor" d="m355.66 11.354c13.793-13.805 36.208-13.805 50.001 0 13.785 13.804 13.785 36.238 0 50.034L201.22 266l204.442 204.61c13.785 13.805 13.785 36.239 0 50.044-13.793 13.796-36.208 13.796-50.002 0a5994246.277 5994246.277 0 0 0-229.332-229.454 35.065 35.065 0 0 1-10.326-25.126c0-9.2 3.393-18.26 10.326-25.2C172.192 194.973 332.731 34.31 355.66 11.354Z"/>
-                        </svg>
-                    </button>
-                    <button class="embla__button embla__button--next" type="button">
-                        <svg class="embla__button__svg" viewBox="0 0 532 532">
-                            <path fill="currentColor" d="M176.34 520.646c-13.793 13.805-36.208 13.805-50.001 0-13.785-13.804-13.785-36.238 0-50.034L330.78 266 126.34 61.391c-13.785-13.805-13.785-36.239 0-50.044 13.793-13.796 36.208-13.796 50.002 0 22.928 22.947 206.395 206.507 229.332 229.454a35.065 35.065 0 0 1 10.326 25.126c0 9.2-3.393 18.26-10.326 25.2C359.808 337.027 199.269 497.69 176.34 520.646Z"/>
-                        </svg>
-                    </button>
-                </div>
-                <?php endif; ?>
-                
-                <div class="embla">
-                    <div class="embla__container">
-                        <?php
-                        while ($posts_query->have_posts()) :
-                            $posts_query->the_post();
-                            ?>
-                            <div class="embla__slide acf-carousel-slide">
-                                <div class="acf-carousel-card">
-                                    <?php if ($settings['show_featured_image'] === 'yes' && has_post_thumbnail()) : ?>
-                                        <div class="acf-carousel-image">
-                                            <a href="<?php the_permalink(); ?>">
-                                                <?php the_post_thumbnail($settings['image_size']); ?>
-                                            </a>
-                                        </div>
-                                    <?php endif; ?>
-                                    
-                                    <div class="acf-carousel-content">
-                                        <?php if ($settings['show_title'] === 'yes') : ?>
-                                            <h3 class="acf-carousel-title">
-                                                <a href="<?php the_permalink(); ?>"><?php the_title(); ?></a>
-                                            </h3>
-                                        <?php endif; ?>
-                                        
-                                        <?php if ($settings['show_excerpt'] === 'yes') : ?>
-                                            <div class="acf-carousel-excerpt">
-                                                <?php 
-                                                $excerpt = get_the_excerpt();
-                                                if (str_word_count($excerpt) > $settings['excerpt_length']) {
-                                                    $excerpt = implode(' ', array_slice(str_word_split($excerpt), 0, $settings['excerpt_length'])) . '...';
-                                                }
-                                                echo esc_html($excerpt);
-                                                ?>
-                                            </div>
-                                        <?php endif; ?>
-                                        
-                                        <?php
-                                        // Display ACF fields if they exist
-                                        $fields = get_fields();
-                                        if ($fields) :
-                                            ?>
-                                            <div class="acf-carousel-fields">
-                                                <?php foreach ($fields as $field_name => $field_value) :
-                                                    if (is_string($field_value) && !empty($field_value)) :
-                                                        ?>
-                                                        <div class="acf-field acf-field-<?php echo esc_attr($field_name); ?>">
-                                                            <strong><?php echo esc_html(ucfirst(str_replace('_', ' ', $field_name))); ?>:</strong>
-                                                            <span><?php echo esc_html($field_value); ?></span>
-                                                        </div>
-                                                    <?php endif;
-                                                endforeach; ?>
-                                            </div>
-                                        <?php endif; ?>
-                                        
-                                        <?php if ($settings['show_read_more'] === 'yes') : ?>
-                                            <div class="acf-carousel-read-more">
-                                                <a href="<?php the_permalink(); ?>" class="acf-carousel-btn">
-                                                    <?php echo esc_html($settings['read_more_text']); ?>
-                                                </a>
-                                            </div>
-                                        <?php endif; ?>
-                                    </div>
-                                </div>
-                            </div>
-                            <?php
-                        endwhile;
-                        wp_reset_postdata();
-                        ?>
-                    </div>
-                </div>
-                
-                <?php if ($settings['show_dots'] === 'yes') : ?>
-                <div class="embla__dots"></div>
-                <?php endif; ?>
-            </div>
             
-            <script>
-            jQuery(document).ready(function($) {
-                if (typeof EmblaCarousel !== 'undefined') {
-                    const emblaNode = document.querySelector('#<?php echo esc_js($carousel_id); ?> .embla');
-                    const options = {
-                        slidesToScroll: <?php echo intval($settings['slides_to_scroll']); ?>,
-                        loop: <?php echo $settings['loop'] === 'yes' ? 'true' : 'false'; ?>,
-                        dragFree: <?php echo $settings['draggable'] === 'yes' ? 'true' : 'false'; ?>,
-                        breakpoints: {
-                            '(max-width: 768px)': { slidesToScroll: 1 },
-                            '(min-width: 769px) and (max-width: 1024px)': { slidesToScroll: Math.min(2, <?php echo intval($settings['slides_to_scroll']); ?>) }
-                        }
-                    };
-                    
-                    const plugins = [];
-                    <?php if ($settings['autoplay'] === 'yes') : ?>
-                    if (typeof EmblaCarouselAutoplay !== 'undefined') {
-                        plugins.push(EmblaCarouselAutoplay({ delay: <?php echo intval($settings['autoplay_delay']); ?> }));
-                    }
-                    <?php endif; ?>
-                    
-                    const embla = EmblaCarousel(emblaNode, options, plugins);
-                    
-                    // Setup navigation buttons
-                    <?php if ($settings['show_arrows'] === 'yes') : ?>
-                    const prevBtn = document.querySelector('#<?php echo esc_js($carousel_id); ?> .embla__button--prev');
-                    const nextBtn = document.querySelector('#<?php echo esc_js($carousel_id); ?> .embla__button--next');
-                    
-                    prevBtn.addEventListener('click', embla.scrollPrev);
-                    nextBtn.addEventListener('click', embla.scrollNext);
-                    <?php endif; ?>
-                    
-                    // Setup dots navigation
-                    <?php if ($settings['show_dots'] === 'yes') : ?>
-                    const dotsNode = document.querySelector('#<?php echo esc_js($carousel_id); ?> .embla__dots');
-                    
-                    const addDotBtnsAndClickHandlers = (embla, dotsNode) => {
-                        let dotNodes = [];
-                        
-                        const addDotBtnsWithClickHandlers = () => {
-                            dotsNode.innerHTML = embla.scrollSnapList()
-                                .map(() => '<button class="embla__dot" type="button"></button>')
-                                .join('');
-                            
-                            dotNodes = Array.from(dotsNode.querySelectorAll('.embla__dot'));
-                            dotNodes.forEach((dotNode, index) => {
-                                dotNode.addEventListener('click', () => embla.scrollTo(index));
-                            });
-                        };
-                        
-                        const toggleDotBtnsActive = () => {
-                            const previous = embla.previousScrollSnap();
-                            const selected = embla.selectedScrollSnap();
-                            dotNodes[previous].classList.remove('embla__dot--selected');
-                            dotNodes[selected].classList.add('embla__dot--selected');
-                        };
-                        
-                        embla.on('init', addDotBtnsWithClickHandlers);
-                        embla.on('reInit', addDotBtnsWithClickHandlers);
-                        embla.on('init', toggleDotBtnsActive);
-                        embla.on('reInit', toggleDotBtnsActive);
-                        embla.on('select', toggleDotBtnsActive);
-                        
-                        return () => {
-                            dotsNode.innerHTML = '';
-                        };
-                    };
-                    
-                    const removeDotBtnsAndClickHandlers = addDotBtnsAndClickHandlers(embla, dotsNode);
-                    embla.on('destroy', removeDotBtnsAndClickHandlers);
-                    <?php endif; ?>
-                    
-                    // Apply responsive slides settings
-                    const applyResponsiveSlides = () => {
-                        const slidesToShow = <?php echo intval($settings['slides_to_show']); ?>;
-                        const slides = emblaNode.querySelectorAll('.embla__slide');
-                        const containerWidth = emblaNode.offsetWidth;
-                        
-                        let currentSlidesToShow = slidesToShow;
-                        if (window.innerWidth <= 768) {
-                            currentSlidesToShow = 1;
-                        } else if (window.innerWidth <= 1024) {
-                            currentSlidesToShow = Math.min(2, slidesToShow);
-                        }
-                        
-                        const slideWidth = (100 / currentSlidesToShow) + '%';
-                        slides.forEach(slide => {
-                            slide.style.flex = '0 0 ' + slideWidth;
-                        });
-                    };
-                    
-                    applyResponsiveSlides();
-                    window.addEventListener('resize', applyResponsiveSlides);
-                    embla.on('reInit', applyResponsiveSlides);
-                }
-            });
-            </script>
-            <?php
+            // Check if hero template is selected
+            if ($settings['carousel_template'] === 'hero') {
+                // Include hero template
+                $this->render_hero_template($posts_query, $settings, $carousel_id);
+            } else {
+                // Include default template
+                $this->render_default_template($posts_query, $settings, $carousel_id);
+            }
+            
         else :
             echo '<p>' . esc_html__('No posts found.', 'acf-carousel-elementor') . '</p>';
         endif;
+    }
+    
+    /**
+     * Render Default Template
+     */
+    private function render_default_template($posts_query, $settings, $carousel_id) {
+        ?>
+        <div class="acf-carousel-wrapper" id="<?php echo esc_attr($carousel_id); ?>">
+            <?php if ($settings['show_arrows'] === 'yes') : ?>
+            <div class="embla__buttons">
+                <button class="embla__button embla__button--prev" type="button">
+                    <svg class="embla__button__svg" viewBox="0 0 532 532">
+                        <path fill="currentColor" d="m355.66 11.354c13.793-13.805 36.208-13.805 50.001 0 13.785 13.804 13.785 36.238 0 50.034L201.22 266l204.442 204.61c13.785 13.805 13.785 36.239 0 50.044-13.793 13.796-36.208 13.796-50.002 0a5994246.277 5994246.277 0 0 0-229.332-229.454 35.065 35.065 0 0 1-10.326-25.126c0-9.2 3.393-18.26 10.326-25.2C172.192 194.973 332.731 34.31 355.66 11.354Z"/>
+                    </svg>
+                </button>
+                <button class="embla__button embla__button--next" type="button">
+                    <svg class="embla__button__svg" viewBox="0 0 532 532">
+                        <path fill="currentColor" d="M176.34 520.646c-13.793 13.805-36.208 13.805-50.001 0-13.785-13.804-13.785-36.238 0-50.034L330.78 266 126.34 61.391c-13.785-13.805-13.785-36.239 0-50.044 13.793-13.796 36.208-13.796 50.002 0 22.928 22.947 206.395 206.507 229.332 229.454a35.065 35.065 0 0 1 10.326 25.126c0 9.2-3.393 18.26-10.326 25.2C359.808 337.027 199.269 497.69 176.34 520.646Z"/>
+                    </svg>
+                </button>
+            </div>
+            <?php endif; ?>
+            
+            <div class="embla">
+                <div class="embla__container">
+                    <?php
+                    while ($posts_query->have_posts()) :
+                        $posts_query->the_post();
+                        ?>
+                        <div class="embla__slide acf-carousel-slide">
+                            <div class="acf-carousel-card">
+                                <?php if ($settings['show_featured_image'] === 'yes' && has_post_thumbnail()) : ?>
+                                    <div class="acf-carousel-image">
+                                        <a href="<?php the_permalink(); ?>">
+                                            <?php the_post_thumbnail($settings['image_size']); ?>
+                                        </a>
+                                    </div>
+                                <?php endif; ?>
+                                
+                                <div class="acf-carousel-content">
+                                    <?php if ($settings['show_title'] === 'yes') : ?>
+                                        <h3 class="acf-carousel-title">
+                                            <a href="<?php the_permalink(); ?>"><?php the_title(); ?></a>
+                                        </h3>
+                                    <?php endif; ?>
+                                    
+                                    <?php if ($settings['show_excerpt'] === 'yes') : ?>
+                                        <div class="acf-carousel-excerpt">
+                                            <?php 
+                                            $excerpt = get_the_excerpt();
+                                            if (!empty($excerpt)) {
+                                                $word_count = str_word_count($excerpt);
+                                                if ($word_count > $settings['excerpt_length']) {
+                                                    $words = explode(' ', $excerpt);
+                                                    $excerpt = implode(' ', array_slice($words, 0, $settings['excerpt_length'])) . '...';
+                                                }
+                                            }
+                                            echo esc_html($excerpt);
+                                            ?>
+                                        </div>
+                                    <?php endif; ?>
+                                    
+                                    <?php
+                                    // Display ACF fields if they exist
+                                    $fields = get_fields();
+                                    if ($fields) :
+                                        ?>
+                                        <div class="acf-carousel-fields">
+                                            <?php foreach ($fields as $field_name => $field_value) :
+                                                if (is_string($field_value) && !empty($field_value)) :
+                                                    ?>
+                                                    <div class="acf-field acf-field-<?php echo esc_attr($field_name); ?>">
+                                                        <strong><?php echo esc_html(ucfirst(str_replace('_', ' ', $field_name))); ?>:</strong>
+                                                        <span><?php echo esc_html($field_value); ?></span>
+                                                    </div>
+                                                <?php endif;
+                                            endforeach; ?>
+                                        </div>
+                                    <?php endif; ?>
+                                    
+                                    <?php if ($settings['show_read_more'] === 'yes') : ?>
+                                        <div class="acf-carousel-read-more">
+                                            <a href="<?php the_permalink(); ?>" class="acf-carousel-btn">
+                                                <?php echo esc_html($settings['read_more_text']); ?>
+                                            </a>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        </div>
+                        <?php
+                    endwhile;
+                    wp_reset_postdata();
+                    ?>
+                </div>
+            </div>
+            
+            <?php if ($settings['show_dots'] === 'yes') : ?>
+            <div class="embla__dots"></div>
+            <?php endif; ?>
+        </div>
+        
+        <script>
+        jQuery(document).ready(function($) {
+            if (typeof EmblaCarousel !== 'undefined') {
+                const emblaNode = document.querySelector('#<?php echo esc_js($carousel_id); ?> .embla');
+                const options = {
+                    slidesToScroll: <?php echo intval($settings['slides_to_scroll']); ?>,
+                    loop: <?php echo $settings['loop'] === 'yes' ? 'true' : 'false'; ?>,
+                    dragFree: <?php echo $settings['draggable'] === 'yes' ? 'true' : 'false'; ?>,
+                    breakpoints: {
+                        '(max-width: 768px)': { slidesToScroll: 1 },
+                        '(min-width: 769px) and (max-width: 1024px)': { slidesToScroll: Math.min(2, <?php echo intval($settings['slides_to_scroll']); ?>) }
+                    }
+                };
+                
+                const plugins = [];
+                <?php if ($settings['autoplay'] === 'yes') : ?>
+                if (typeof EmblaCarouselAutoplay !== 'undefined') {
+                    plugins.push(EmblaCarouselAutoplay({ delay: <?php echo intval($settings['autoplay_delay']); ?> }));
+                }
+                <?php endif; ?>
+                
+                const embla = EmblaCarousel(emblaNode, options, plugins);
+                
+                // Setup navigation buttons
+                <?php if ($settings['show_arrows'] === 'yes') : ?>
+                const prevBtn = document.querySelector('#<?php echo esc_js($carousel_id); ?> .embla__button--prev');
+                const nextBtn = document.querySelector('#<?php echo esc_js($carousel_id); ?> .embla__button--next');
+                
+                prevBtn.addEventListener('click', embla.scrollPrev);
+                nextBtn.addEventListener('click', embla.scrollNext);
+                <?php endif; ?>
+                
+                // Setup dots navigation
+                <?php if ($settings['show_dots'] === 'yes') : ?>
+                const dotsNode = document.querySelector('#<?php echo esc_js($carousel_id); ?> .embla__dots');
+                
+                const addDotBtnsAndClickHandlers = (embla, dotsNode) => {
+                    let dotNodes = [];
+                    
+                    const addDotBtnsWithClickHandlers = () => {
+                        dotsNode.innerHTML = embla.scrollSnapList()
+                            .map(() => '<button class="embla__dot" type="button"></button>')
+                            .join('');
+                        
+                        dotNodes = Array.from(dotsNode.querySelectorAll('.embla__dot'));
+                        dotNodes.forEach((dotNode, index) => {
+                            dotNode.addEventListener('click', () => embla.scrollTo(index));
+                        });
+                    };
+                    
+                    const toggleDotBtnsActive = () => {
+                        const previous = embla.previousScrollSnap();
+                        const selected = embla.selectedScrollSnap();
+                        dotNodes[previous].classList.remove('embla__dot--selected');
+                        dotNodes[selected].classList.add('embla__dot--selected');
+                    };
+                    
+                    embla.on('init', addDotBtnsWithClickHandlers);
+                    embla.on('reInit', addDotBtnsWithClickHandlers);
+                    embla.on('init', toggleDotBtnsActive);
+                    embla.on('reInit', toggleDotBtnsActive);
+                    embla.on('select', toggleDotBtnsActive);
+                    
+                    return () => {
+                        dotsNode.innerHTML = '';
+                    };
+                };
+                
+                const removeDotBtnsAndClickHandlers = addDotBtnsAndClickHandlers(embla, dotsNode);
+                embla.on('destroy', removeDotBtnsAndClickHandlers);
+                <?php endif; ?>
+                
+                // Apply responsive slides settings
+                const applyResponsiveSlides = () => {
+                    const slidesToShow = <?php echo intval($settings['slides_to_show']); ?>;
+                    const slides = emblaNode.querySelectorAll('.embla__slide');
+                    
+                    let currentSlidesToShow = slidesToShow;
+                    if (window.innerWidth <= 768) {
+                        currentSlidesToShow = 1;
+                    } else if (window.innerWidth <= 1024) {
+                        currentSlidesToShow = Math.min(2, slidesToShow);
+                    }
+                    
+                    const slideWidth = (100 / currentSlidesToShow) + '%';
+                    slides.forEach(slide => {
+                        slide.style.flex = '0 0 ' + slideWidth;
+                    });
+                };
+                
+                applyResponsiveSlides();
+                window.addEventListener('resize', applyResponsiveSlides);
+                embla.on('reInit', applyResponsiveSlides);
+            }
+        });
+        </script>
+        <?php
+    }
+    
+    /**
+     * Render Hero Template
+     */
+    private function render_hero_template($posts_query, $settings, $carousel_id) {
+        // Verificar que el template existe
+        $template_path = ACF_CAROUSEL_PLUGIN_PATH . 'templates/hero-carousel-template.php';
+        
+        if (file_exists($template_path)) {
+            include $template_path;
+        } else {
+            // Fallback al template por defecto si el hero template no existe
+            echo '<div class="acf-carousel-error">';
+            echo '<p>' . esc_html__('Hero template not found. Using default template.', 'acf-carousel-elementor') . '</p>';
+            echo '</div>';
+            $this->render_default_template($posts_query, $settings, $carousel_id);
+        }
     }
     
     protected function content_template() {
@@ -770,4 +956,3 @@ class ACF_Carousel_Widget extends \Elementor\Widget_Base {
         <?php
     }
 }
-                                                            

@@ -20,7 +20,13 @@ if ($posts_query->have_posts()) :
     $total_posts = $posts_query->post_count;
 ?>
 
-<div class="acf-hero-carousel-wrapper" id="<?php echo esc_attr($carousel_id); ?>">
+<div class="acf-hero-carousel-wrapper" id="<?php echo esc_attr($carousel_id); ?>" 
+     data-loop="<?php echo esc_attr($settings['loop']); ?>"
+     data-draggable="<?php echo esc_attr($settings['draggable']); ?>"
+     data-slides-to-scroll="<?php echo esc_attr($settings['slides_to_scroll']); ?>"
+     data-slides-to-show="<?php echo esc_attr($settings['slides_to_show']); ?>"
+     data-autoplay="<?php echo esc_attr($settings['autoplay']); ?>"
+     data-autoplay-delay="<?php echo esc_attr($settings['autoplay_delay']); ?>">
     
     <!-- Background Layer -->
     <div class="hero-background-layer">
@@ -217,8 +223,42 @@ if ($posts_query->have_posts()) :
 
 <script>
 jQuery(document).ready(function($) {
-    if (typeof EmblaCarousel !== 'undefined') {
-        const heroEmblaNode = document.querySelector('#<?php echo esc_js($carousel_id); ?> .hero-embla');
+    console.log('🎠 Hero Carousel: Starting initialization...');
+    
+    function initHeroCarousel() {
+        if (typeof EmblaCarousel === 'undefined') {
+            console.log('⚠️ EmblaCarousel not found, loading from CDN...');
+            
+            // Cargar Embla desde CDN
+            const script1 = document.createElement('script');
+            script1.src = 'https://unpkg.com/embla-carousel@8.0.0/embla-carousel.umd.js';
+            script1.onload = function() {
+                const script2 = document.createElement('script');
+                script2.src = 'https://unpkg.com/embla-carousel-autoplay@8.0.0/embla-carousel-autoplay.umd.js';
+                script2.onload = function() {
+                    setTimeout(setupHeroCarousel, 100);
+                };
+                document.head.appendChild(script2);
+            };
+            document.head.appendChild(script1);
+        } else {
+            setupHeroCarousel();
+        }
+    }
+    
+    function setupHeroCarousel() {
+        console.log('🔧 Setting up Hero Carousel...');
+        
+        const heroCarouselId = '<?php echo esc_js($carousel_id); ?>';
+        const heroEmblaNode = document.querySelector('#' + heroCarouselId + ' .hero-embla');
+        
+        if (!heroEmblaNode) {
+            console.error('❌ Hero embla node not found');
+            return;
+        }
+        
+        console.log('✅ Hero embla node found:', heroEmblaNode);
+        
         const heroOptions = {
             slidesToScroll: 1,
             loop: <?php echo $settings['loop'] === 'yes' ? 'true' : 'false'; ?>,
@@ -232,26 +272,65 @@ jQuery(document).ready(function($) {
         if (typeof EmblaCarouselAutoplay !== 'undefined') {
             heroPlugins.push(EmblaCarouselAutoplay({ 
                 delay: <?php echo intval($settings['autoplay_delay']); ?>,
-                stopOnInteraction: true
+                stopOnInteraction: true,
+                stopOnMouseEnter: true
             }));
+            console.log('✅ Autoplay plugin added');
         }
         <?php endif; ?>
         
-        const heroEmbla = EmblaCarousel(heroEmblaNode, heroOptions, heroPlugins);
+        let heroEmbla;
+        try {
+            heroEmbla = EmblaCarousel(heroEmblaNode, heroOptions, heroPlugins);
+            console.log('✅ Hero Embla instance created successfully');
+        } catch (error) {
+            console.error('❌ Error creating Hero Embla instance:', error);
+            return;
+        }
         
         // Setup navigation
-        const prevBtn = document.querySelector('#<?php echo esc_js($carousel_id); ?> .hero-arrow-prev');
-        const nextBtn = document.querySelector('#<?php echo esc_js($carousel_id); ?> .hero-arrow-next');
+        const prevBtn = document.querySelector('#' + heroCarouselId + ' .hero-arrow-prev');
+        const nextBtn = document.querySelector('#' + heroCarouselId + ' .hero-arrow-next');
+        
+        console.log('🔍 Navigation buttons:', {prev: !!prevBtn, next: !!nextBtn});
         
         if (prevBtn && nextBtn) {
-            prevBtn.addEventListener('click', () => heroEmbla.scrollPrev());
-            nextBtn.addEventListener('click', () => heroEmbla.scrollNext());
+            // Limpiar eventos existentes clonando los elementos
+            const newPrevBtn = prevBtn.cloneNode(true);
+            const newNextBtn = nextBtn.cloneNode(true);
+            
+            prevBtn.parentNode.replaceChild(newPrevBtn, prevBtn);
+            nextBtn.parentNode.replaceChild(newNextBtn, nextBtn);
+            
+            // Agregar nuevos eventos
+            newPrevBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                heroEmbla.scrollPrev();
+                console.log('⬅️ Hero: Previous clicked');
+            });
+            
+            newNextBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                heroEmbla.scrollNext();
+                console.log('➡️ Hero: Next clicked');
+            });
+            
+            // Forzar estilos clickeables
+            [newPrevBtn, newNextBtn].forEach(btn => {
+                btn.style.cursor = 'pointer';
+                btn.style.pointerEvents = 'all';
+                btn.style.zIndex = '9999';
+            });
+            
+            console.log('✅ Hero navigation buttons configured');
         }
         
         // Update slide counter
         const updateSlideCounter = () => {
             const current = heroEmbla.selectedScrollSnap() + 1;
-            const currentSlideEl = document.querySelector('#<?php echo esc_js($carousel_id); ?> .current-slide');
+            const currentSlideEl = document.querySelector('#' + heroCarouselId + ' .current-slide');
             if (currentSlideEl) {
                 currentSlideEl.textContent = current;
             }
@@ -262,17 +341,24 @@ jQuery(document).ready(function($) {
         
         // Generate and handle dots
         <?php if ($settings['show_dots'] === 'yes'): ?>
-        const dotsContainer = document.querySelector('#<?php echo esc_js($carousel_id); ?> .hero-dots-container');
+        const dotsContainer = document.querySelector('#' + heroCarouselId + ' .hero-dots-container');
         const addDots = () => {
             if (!dotsContainer) return;
             
             dotsContainer.innerHTML = heroEmbla.scrollSnapList()
-                .map((_, index) => `<button class="hero-dot" data-index="${index}"></button>`)
+                .map((_, index) => `<button class="hero-dot" data-index="${index}" type="button"></button>`)
                 .join('');
                 
             const dots = dotsContainer.querySelectorAll('.hero-dot');
             dots.forEach((dot, index) => {
-                dot.addEventListener('click', () => heroEmbla.scrollTo(index));
+                dot.style.cursor = 'pointer';
+                dot.style.pointerEvents = 'all';
+                
+                dot.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    heroEmbla.scrollTo(index);
+                    console.log(`🎯 Hero: Dot ${index + 1} clicked`);
+                });
             });
         };
         
@@ -292,21 +378,63 @@ jQuery(document).ready(function($) {
         heroEmbla.on('init', addDots);
         heroEmbla.on('select', updateDots);
         heroEmbla.on('init', updateDots);
+        console.log('✅ Hero dots configured');
         <?php endif; ?>
         
         // Background image changer
         const updateBackgroundImage = () => {
             const currentIndex = heroEmbla.selectedScrollSnap();
             const slides = heroEmblaNode.querySelectorAll('.hero-card img');
-            const bgImage = document.querySelector('#<?php echo esc_js($carousel_id); ?> .hero-bg-image');
+            const bgImage = document.querySelector('#' + heroCarouselId + ' .hero-bg-image');
             
             if (slides[currentIndex] && bgImage) {
-                bgImage.src = slides[currentIndex].src;
+                bgImage.style.transition = 'opacity 0.5s ease';
+                bgImage.style.opacity = '0.8';
+                
+                setTimeout(() => {
+                    bgImage.src = slides[currentIndex].src;
+                    bgImage.style.opacity = '1';
+                }, 250);
             }
         };
         
         heroEmbla.on('select', updateBackgroundImage);
+        console.log('✅ Hero background changer configured');
+        
+        // Marcar como inicializado
+        const carouselWrapper = document.querySelector('#' + heroCarouselId);
+        if (carouselWrapper) {
+            carouselWrapper.classList.add('hero-carousel-initialized');
+            carouselWrapper.heroEmblaInstance = heroEmbla;
+        }
+        
+        console.log('🎉 Hero Carousel initialized successfully!');
+        
+        // Test automático
+        setTimeout(() => {
+            console.log('🧪 Hero: Auto test - clicking next button');
+            const testBtn = document.querySelector('#' + heroCarouselId + ' .hero-arrow-next');
+            if (testBtn) testBtn.click();
+        }, 2000);
     }
+    
+    // Inicializar
+    initHeroCarousel();
+    
+    // También intentar después de un delay por si hay problemas de timing
+    setTimeout(function() {
+        const heroWrapper = document.querySelector('#<?php echo esc_js($carousel_id); ?>');
+        if (heroWrapper && !heroWrapper.classList.contains('hero-carousel-initialized')) {
+            console.log('🔄 Hero: Retry initialization...');
+            initHeroCarousel();
+        }
+    }, 3000);
+    
+    // Exponer función global para test manual
+    window.testHeroCarousel = function() {
+        console.log('🧪 Manual hero carousel test');
+        setupHeroCarousel();
+    };
 });
 </script>
 
