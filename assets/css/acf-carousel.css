@@ -1,0 +1,392 @@
+/**
+ * ACF Carousel Styles
+ * assets/css/acf-carousel.css
+ */
+
+/* Main carousel wrapper */
+.acf-carousel-wrapper {
+    position: relative;
+    overflow: hidden;
+    max-width: 100%;
+}
+
+/* Embla carousel base styles */
+.embla {
+    overflow: hidden;
+    margin: 0 auto;
+}
+
+.embla__container {
+    display: flex;
+    touch-action: pan-y pinch-zoom;
+    margin-left: calc(var(--slide-spacing, 1rem) * -1);
+}
+
+.embla__slide {
+    transform: translate3d(0, 0, 0);
+    flex: 0 0 100%;
+    min-width: 0;
+    padding-left: var(--slide-spacing, 1rem);
+}
+
+/* Card styles */
+.acf-carousel-card {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.acf-carousel-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Image styles */
+.acf-carousel-image {
+    position: relative;
+    overflow: hidden;
+    aspect-ratio: 16/9;
+}
+
+.acf-carousel-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.acf-carousel-image:hover img {
+    transform: scale(1.05);
+}
+
+.acf-carousel-image a {
+    display: block;
+    height: 100%;
+}
+
+/* Content styles */
+.acf-carousel-content {
+    padding: 1.5rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.acf-carousel-title {
+    margin: 0 0 1rem 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+.acf-carousel-title a {
+    color: #333;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.acf-carousel-title a:hover {
+    color: #007cba;
+}
+
+.acf-carousel-excerpt {
+    color: #666;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin-bottom: 1rem;
+    flex: 1;
+}
+
+/* ACF Fields styles */
+.acf-carousel-fields {
+    margin-bottom: 1.5rem;
+}
+
+.acf-field {
+    margin-bottom: 0.75rem;
+    font-size: 0.9rem;
+}
+
+.acf-field strong {
+    color: #333;
+    font-weight: 600;
+    display: inline-block;
+    margin-right: 0.5rem;
+}
+
+.acf-field span {
+    color: #666;
+}
+
+/* Read more button */
+.acf-carousel-read-more {
+    margin-top: auto;
+}
+
+.acf-carousel-btn {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    background: #007cba;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    border: none;
+    cursor: pointer;
+}
+
+.acf-carousel-btn:hover {
+    background: #005a87;
+    transform: translateY(-1px);
+    color: #fff;
+    text-decoration: none;
+}
+
+/* Navigation buttons */
+.embla__buttons {
+    display: flex;
+    justify-content: space-between;
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    transform: translateY(-50%);
+    z-index: 10;
+    pointer-events: none;
+}
+
+.embla__button {
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    pointer-events: all;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.embla__button:hover {
+    background: #fff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transform: scale(1.05);
+}
+
+.embla__button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.embla__button--prev {
+    margin-left: 1rem;
+}
+
+.embla__button--next {
+    margin-right: 1rem;
+}
+
+.embla__button__svg {
+    width: 1.25rem;
+    height: 1.25rem;
+    color: #333;
+}
+
+/* Dots navigation */
+.embla__dots {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 1.5rem;
+    gap: 0.5rem;
+}
+
+.embla__dot {
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 50%;
+    background: #ccc;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    padding: 0;
+}
+
+.embla__dot:hover {
+    background: #999;
+    transform: scale(1.2);
+}
+
+.embla__dot--selected {
+    background: #333;
+    transform: scale(1.3);
+}
+
+.embla__dot--selected:hover {
+    background: #333;
+}
+
+/* Responsive styles */
+@media (max-width: 1200px) {
+    .embla__slide {
+        flex: 0 0 50%;
+    }
+}
+
+@media (max-width: 768px) {
+    .embla__slide {
+        flex: 0 0 100%;
+    }
+    
+    .acf-carousel-content {
+        padding: 1rem;
+    }
+    
+    .acf-carousel-title {
+        font-size: 1.1rem;
+    }
+    
+    .embla__button {
+        width: 2.5rem;
+        height: 2.5rem;
+    }
+    
+    .embla__button__svg {
+        width: 1rem;
+        height: 1rem;
+    }
+    
+    .embla__button--prev {
+        margin-left: 0.5rem;
+    }
+    
+    .embla__button--next {
+        margin-right: 0.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .acf-carousel-content {
+        padding: 0.75rem;
+    }
+    
+    .acf-carousel-title {
+        font-size: 1rem;
+        margin-bottom: 0.75rem;
+    }
+    
+    .acf-carousel-excerpt {
+        font-size: 0.9rem;
+        margin-bottom: 0.75rem;
+    }
+    
+    .acf-field {
+        font-size: 0.85rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .acf-carousel-btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.85rem;
+    }
+}
+
+/* Animation styles */
+.embla__slide {
+    opacity: 0.7;
+    transition: opacity 0.3s ease;
+}
+
+.embla__slide.is-snapped {
+    opacity: 1;
+}
+
+/* Loading state */
+.acf-carousel-wrapper.is-loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.acf-carousel-wrapper.is-loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 2rem;
+    height: 2rem;
+    margin: -1rem 0 0 -1rem;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #007cba;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    z-index: 100;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Custom scrollbar for touch devices */
+.embla__container::-webkit-scrollbar {
+    display: none;
+}
+
+.embla__container {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+/* Focus styles for accessibility */
+.embla__button:focus,
+.embla__dot:focus,
+.acf-carousel-btn:focus,
+.acf-carousel-title a:focus {
+    outline: 2px solid #007cba;
+    outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .acf-carousel-card {
+        border: 2px solid #333;
+    }
+    
+    .embla__button {
+        background: #fff;
+        border: 2px solid #333;
+    }
+    
+    .embla__dot {
+        border: 1px solid #333;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .acf-carousel-card,
+    .acf-carousel-image img,
+    .embla__button,
+    .embla__dot,
+    .acf-carousel-btn {
+        transition: none;
+    }
+    
+    .acf-carousel-card:hover {
+        transform: none;
+    }
+    
+    .acf-carousel-image:hover img {
+        transform: none;
+    }
+}
